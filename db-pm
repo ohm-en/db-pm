@@ -1,0 +1,36 @@
+#!/usr/bin/env zsh
+Config_dir="$XDG_DATA_HOME/db-pm"
+PROFILE_DIR=$Config_dir/Profiles
+PROFILE_NAME=$(fd -d 1 . $PROFILE_DIR -X printf '%s\n' {/} | dmenu -i -p "Select Browser Profile")
+PROFILE="$PROFILE_DIR/$PROFILE_NAME"
+
+function continue_message () {
+    REPLY=$(echo "y" "\n" "n" | dmenu -i -p "$1")
+    if [  "$REPLY" != "${REPLY#[Yy]}"  ]; then 
+       return 1
+    else
+       exit 1
+    fi
+}
+
+if [ ! -d "$PROFILE" ]; then
+  continue_message "$PROFILE does not exist. Continue and create the folder?"
+  mkdir $PROFILE
+fi
+
+if [ ! -f "$PROFILE/Preferences" ]; then
+  if [ -n "$(ls -A $PROFILE 2>/dev/null)" ]; then
+    continue_message "This directory doesn't appear to be a profile and contains other files. Continue?"
+  else
+    continue_message "'$PROFILE' isn't a profile but is an empty folder. Continue?"
+  fi
+fi
+
+WINDOW=$(wmctrl -lx | grep "brave-browser.$PROFILE_NAME " | awk '{print $1}')
+
+if [ -n $WINDOW];
+then
+    dbrave "$PROFILE_NAME" "$PROFILE"
+else
+    wmctrl -ia $WINDOW
+fi
